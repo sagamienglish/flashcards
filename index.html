@@ -85,7 +85,9 @@
     .brand-sub { margin-top: 1px; color: var(--muted); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; }
     .header-actions { display: flex; align-items: center; gap: 18px; }
     .theme-picker { position: relative; }
-    .theme-picker summary {
+    .data-menu { position: relative; }
+    .theme-picker summary,
+    .data-menu summary {
       display: grid;
       place-items: center;
       width: 42px;
@@ -98,8 +100,10 @@
       font-size: 1.1rem;
       transition: background .18s ease, transform .18s ease;
     }
-    .theme-picker summary::-webkit-details-marker { display: none; }
-    .theme-picker summary:hover { background: white; transform: translateY(-1px); }
+    .theme-picker summary::-webkit-details-marker,
+    .data-menu summary::-webkit-details-marker { display: none; }
+    .theme-picker summary:hover,
+    .data-menu summary:hover { background: white; transform: translateY(-1px); }
     .theme-options {
       position: absolute;
       top: calc(100% + 10px);
@@ -115,6 +119,38 @@
       backdrop-filter: blur(16px);
       animation: reveal .18s ease both;
     }
+    .data-options {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      z-index: 40;
+      display: grid;
+      width: 220px;
+      padding: 8px;
+      background: rgba(255, 255, 255, .96);
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      box-shadow: 0 16px 38px rgba(28, 42, 36, .15);
+      backdrop-filter: blur(16px);
+      animation: reveal .18s ease both;
+    }
+    .data-options button {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      min-height: 44px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 10px;
+      color: var(--ink);
+      background: transparent;
+      cursor: pointer;
+      font-size: .78rem;
+      font-weight: 700;
+      text-align: left;
+    }
+    .data-options button:hover { background: var(--soft); }
     .theme-dot {
       width: 20px;
       height: 20px;
@@ -420,7 +456,12 @@
       flex-direction: column;
       color: #f5f6f1;
       background:
-        radial-gradient(circle at 50% 30%, #243a32 0, #14231e 48%, #0e1814 100%);
+        radial-gradient(
+          circle at 50% 30%,
+          color-mix(in srgb, var(--brand) 42%, #24302c) 0,
+          color-mix(in srgb, var(--brand) 20%, #14201c) 48%,
+          color-mix(in srgb, var(--brand) 8%, #0d1512) 100%
+        );
     }
     .play-top {
       display: grid;
@@ -454,7 +495,7 @@
       display: block;
       width: 0;
       height: 100%;
-      background: #78d2a9;
+      background: color-mix(in srgb, var(--brand) 72%, white);
       border-radius: inherit;
       transition: width .35s ease;
     }
@@ -485,14 +526,14 @@
       box-shadow: 0 32px 80px rgba(0,0,0,.28);
     }
     .card-front { color: var(--ink); background: #fffefa; }
-    .card-back { color: #123c2e; background: #e6f3ec; transform: rotateX(180deg); }
+    .card-back { color: var(--brand-dark); background: color-mix(in srgb, var(--brand-soft) 82%, white); transform: rotateX(180deg); }
     .completion-face {
       display: flex;
       flex-direction: column;
       justify-content: center;
       text-align: center;
       background:
-        radial-gradient(circle at 50% 10%, rgba(194, 235, 215, .78), transparent 42%),
+        radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--brand-soft) 80%, transparent), transparent 42%),
         #fffefa;
     }
     .completion-badge {
@@ -558,7 +599,7 @@
       transition: opacity .08s linear;
     }
     .swipe-label.left { left: clamp(20px, 4vw, 34px); color: #d85f51; transform: rotate(-5deg); }
-    .swipe-label.right { right: clamp(20px, 4vw, 34px); color: #25845d; transform: rotate(5deg); }
+    .swipe-label.right { right: clamp(20px, 4vw, 34px); color: var(--brand); transform: rotate(5deg); }
     .play-controls {
       display: flex;
       align-items: center;
@@ -583,8 +624,8 @@
     .control:hover { transform: translateY(-2px); background: rgba(255,255,255,.14); }
     .control.large { width: clamp(58px, 12vw, 78px); height: clamp(58px, 12vw, 78px); }
     .control.miss { color: #ff9d8f; }
-    .control.sound { color: #a8ddc5; background: rgba(74, 151, 116, .16); }
-    .control.know { color: #72d5a9; }
+    .control.sound { color: color-mix(in srgb, var(--brand) 45%, white); background: color-mix(in srgb, var(--brand) 22%, transparent); }
+    .control.know { color: color-mix(in srgb, var(--brand) 55%, white); }
 
     .toast {
       position: fixed;
@@ -606,7 +647,7 @@
       .topbar { min-height: 68px; padding-inline: 18px; }
       .brand-sub { display: none; }
       .header-actions { gap: 8px; }
-      .theme-picker summary { width: 40px; height: 40px; }
+      .theme-picker summary, .data-menu summary { width: 40px; height: 40px; }
       .theme-options { gap: 7px; padding: 10px; }
       .theme-dot { width: 17px; height: 17px; border-width: 2px; }
       .header-actions .btn-primary { width: 44px; padding: 0; font-size: 0; }
@@ -709,6 +750,75 @@
       localStorage.setItem(THEME_KEY, theme);
       render();
     }
+    function dataMenu() {
+      return `<details class="data-menu">
+        <summary aria-label="単語帳データの管理" title="バックアップ">⇅</summary>
+        <div class="data-options">
+          <button onclick="exportData()"><span class="icon">↓</span> ファイルに書き出す</button>
+          <button onclick="document.getElementById('importFile').click()"><span class="icon">↑</span> ファイルから読み込む</button>
+        </div>
+        <input id="importFile" type="file" accept=".json,application/json" hidden onchange="importData(this)">
+      </details>`;
+    }
+    function exportData() {
+      const backup = {
+        app: "Flashcards",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        decks: state.decks
+      };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const date = new Date().toISOString().slice(0, 10);
+      link.href = url;
+      link.download = `flashcards-backup-${date}.json`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast(`${state.decks.length}個の単語帳を書き出しました`);
+    }
+    function importData(input) {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          const source = Array.isArray(parsed) ? parsed : parsed.decks;
+          if (!Array.isArray(source)) throw new Error("invalid");
+          const imported = source.map(deck => ({
+            id: typeof deck.id === "string" ? deck.id : `deck-${uid()}`,
+            name: typeof deck.name === "string" && deck.name.trim() ? deck.name : "読み込んだ単語帳",
+            cards: Array.isArray(deck.cards) ? deck.cards.map(card => ({
+              id: typeof card.id === "string" ? card.id : `c-${uid()}`,
+              en: typeof card.en === "string" ? card.en : "",
+              ja: typeof card.ja === "string" ? card.ja : "",
+              part: typeof card.part === "string" ? card.part : "",
+              status: card.status === "learned" ? "learned" : "unlearned"
+            })) : []
+          }));
+          if (!confirm(`${imported.length}個の単語帳を読み込みます。現在のデータは残り、同じ単語帳は更新されます。`)) return;
+          const merged = new Map(state.decks.map(deck => [deck.id, deck]));
+          imported.forEach(deck => merged.set(deck.id, deck));
+          state.decks = [...merged.values()];
+          saveData();
+          state.expandedDeckId = null;
+          render();
+          toast(`${imported.length}個の単語帳を読み込みました`);
+        } catch {
+          toast("このファイルは読み込めませんでした");
+        } finally {
+          input.value = "";
+        }
+      };
+      reader.onerror = () => {
+        input.value = "";
+        toast("ファイルを読み込めませんでした");
+      };
+      reader.readAsText(file);
+    }
     function render() {
       clearAutoPlayTimer();
       app.innerHTML = state.view === "list" ? renderList() : state.view === "edit" ? renderEdit() : renderPlay();
@@ -730,7 +840,7 @@
           </div>
         </div>`;
       return `<div class="shell">
-        <header class="topbar">${brand()}<div class="header-actions">${themePicker()}<button class="btn btn-primary" onclick="createNewDeck()"><span class="icon">＋</span> 新しい単語帳</button></div></header>
+        <header class="topbar">${brand()}<div class="header-actions">${dataMenu()}${themePicker()}<button class="btn btn-primary" onclick="createNewDeck()"><span class="icon">＋</span> 新しい単語帳</button></div></header>
         <main class="main">
           ${content}
         </main>

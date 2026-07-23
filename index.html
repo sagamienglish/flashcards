@@ -234,6 +234,17 @@
     .icon { font-size: 1.15em; line-height: 1; }
 
     .deck-list { display: grid; gap: 18px; }
+    .deck-section { margin-top: 30px; }
+    .deck-section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+      padding: 0 4px;
+    }
+    .deck-section-head h2 { margin: 0; font-size: 1.05rem; letter-spacing: -.02em; }
+    .deck-section-head p { margin: 0; color: var(--muted); font-size: .78rem; }
     .deck {
       overflow: hidden;
       background: rgba(255, 255, 255, .92);
@@ -993,8 +1004,7 @@
     }
 
     function renderList() {
-      const content = state.decks.length ? `<div class="deck-list">${state.decks.map(renderDeck).join("")}</div>` : `
-        <div class="empty">
+      const welcome = `<div class="empty">
           <div>
             <div class="empty-visual"><div class="mini-card">A</div><div class="mini-card">あ</div></div>
             <h2>最初の単語帳をつくりましょう</h2>
@@ -1002,10 +1012,18 @@
             <button class="btn btn-primary" onclick="createNewDeck()"><span class="icon">＋</span> 単語帳をつくる</button>
           </div>
         </div>`;
+      const deckSection = state.decks.length ? `<section class="deck-section" aria-labelledby="deckSectionTitle">
+        <div class="deck-section-head">
+          <h2 id="deckSectionTitle">${state.decks.length === 1 && state.decks[0].id === SAMPLE_DECK.id ? "お試し用のサンプル" : "単語帳"}</h2>
+          <p>${state.decks.length}冊</p>
+        </div>
+        <div class="deck-list">${state.decks.map(renderDeck).join("")}</div>
+      </section>` : "";
       return `<div class="shell">
         <header class="topbar">${brand()}<div class="header-actions"><button class="btn help-button" aria-label="使い方を開く" title="使い方" onclick="openManual()">?</button>${dataMenu()}${themePicker()}<button class="btn btn-primary" onclick="createNewDeck()"><span class="icon">＋</span> 新しい単語帳</button></div></header>
         <main class="main">
-          ${content}
+          ${welcome}
+          ${deckSection}
         </main>
         ${manualDialog()}
       </div>`;

@@ -1,0 +1,8 @@
+{
+  "name": "flashcards-english-learning",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  }
+}

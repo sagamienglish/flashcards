@@ -1,0 +1,1133 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f7f2">
+  <title>Flashcards — English Learning</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #17201d;
+      --muted: #69726e;
+      --paper: #f7f7f2;
+      --surface: #ffffff;
+      --line: #dfe3dd;
+      --soft: #eef1eb;
+      --brand: #1c6b50;
+      --brand-dark: #12513c;
+      --brand-soft: #dff1e8;
+      --glow: rgba(223, 241, 232, .8);
+      --coral: #d95f4d;
+      --coral-soft: #f9e7e3;
+      --shadow: 0 18px 45px rgba(28, 42, 36, .08);
+      --radius: 22px;
+    }
+    :root[data-theme="ocean"] { --brand: #376b8c; --brand-dark: #28536f; --brand-soft: #e0edf4; --glow: rgba(218, 235, 245, .88); }
+    :root[data-theme="indigo"] { --brand: #5b5f97; --brand-dark: #454978; --brand-soft: #e8e8f4; --glow: rgba(230, 229, 246, .9); }
+    :root[data-theme="plum"] { --brand: #855d78; --brand-dark: #68465c; --brand-soft: #f1e5ed; --glow: rgba(242, 225, 236, .88); }
+    :root[data-theme="clay"] { --brand: #a05f49; --brand-dark: #7f4635; --brand-soft: #f5e5de; --glow: rgba(246, 226, 216, .9); }
+    :root[data-theme="mustard"] { --brand: #927126; --brand-dark: #715617; --brand-soft: #f4ecd5; --glow: rgba(246, 236, 205, .9); }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 0%, var(--glow), transparent 28rem),
+        var(--paper);
+      font-family: "DM Sans", "Noto Sans JP", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior-y: contain;
+    }
+    button, input, textarea { font: inherit; }
+    button { color: inherit; }
+    button, label { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible {
+      outline: 3px solid rgba(28, 107, 80, .22);
+      outline-offset: 2px;
+    }
+    ::selection { background: #c9eadb; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-thumb { background: #cbd1ca; border-radius: 99px; }
+
+    #app { min-height: 100dvh; }
+    .shell { min-height: 100dvh; display: flex; flex-direction: column; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 78px;
+      padding: 14px clamp(20px, 4vw, 56px);
+      background: rgba(247, 247, 242, .86);
+      border-bottom: 1px solid rgba(205, 212, 204, .8);
+      backdrop-filter: blur(18px);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      color: white;
+      background: var(--brand);
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(28, 107, 80, .2);
+      font-weight: 700;
+      transform: rotate(-3deg);
+    }
+    .brand-name { font-size: 1.18rem; font-weight: 700; letter-spacing: -.03em; }
+    .brand-sub { margin-top: 1px; color: var(--muted); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; }
+    .header-actions { display: flex; align-items: center; gap: 18px; }
+    .theme-picker { position: relative; }
+    .theme-picker summary {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(205, 212, 204, .9);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, .72);
+      cursor: pointer;
+      list-style: none;
+      font-size: 1.1rem;
+      transition: background .18s ease, transform .18s ease;
+    }
+    .theme-picker summary::-webkit-details-marker { display: none; }
+    .theme-picker summary:hover { background: white; transform: translateY(-1px); }
+    .theme-options {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      z-index: 40;
+      display: flex;
+      gap: 9px;
+      padding: 12px;
+      background: rgba(255, 255, 255, .94);
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      box-shadow: 0 16px 38px rgba(28, 42, 36, .15);
+      backdrop-filter: blur(16px);
+      animation: reveal .18s ease both;
+    }
+    .theme-dot {
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      border: 3px solid transparent;
+      border-radius: 50%;
+      background: var(--dot);
+      background-clip: padding-box;
+      cursor: pointer;
+      transition: transform .18s ease, border-color .18s ease;
+    }
+    .theme-dot:hover { transform: scale(1.14); }
+    .theme-dot.active { border-color: rgba(23, 32, 29, .38); transform: scale(1.12); }
+    .main {
+      width: min(1040px, 100%);
+      margin: 0 auto;
+      padding: clamp(36px, 6vw, 72px) clamp(20px, 4vw, 40px) 80px;
+    }
+    .hero {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 34px;
+    }
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--brand);
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    .hero h1 {
+      max-width: 650px;
+      margin-bottom: 10px;
+      font-size: clamp(2rem, 5vw, 3.6rem);
+      line-height: 1.08;
+      letter-spacing: -.055em;
+    }
+    .hero-copy { margin-bottom: 0; color: var(--muted); line-height: 1.8; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      border-radius: 13px;
+      background: transparent;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0) scale(.98); }
+    .btn-primary {
+      color: white;
+      background: var(--brand);
+      box-shadow: 0 10px 24px rgba(28, 107, 80, .18);
+    }
+    .btn-primary:hover { background: var(--brand-dark); box-shadow: 0 13px 28px rgba(28, 107, 80, .23); }
+    .btn-secondary { background: var(--surface); border-color: var(--line); }
+    .btn-secondary:hover { background: var(--soft); }
+    .btn-ghost { color: var(--muted); }
+    .btn-ghost:hover { color: var(--ink); background: var(--soft); }
+    .btn-danger { color: var(--coral); background: var(--coral-soft); }
+    .btn-wide { width: 100%; min-height: 54px; }
+    .icon { font-size: 1.15em; line-height: 1; }
+
+    .deck-list { display: grid; gap: 18px; }
+    .deck {
+      overflow: hidden;
+      background: rgba(255, 255, 255, .92);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px rgba(28, 42, 36, .035);
+      transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+    }
+    .deck:hover { border-color: #cbd3ca; box-shadow: var(--shadow); transform: translateY(-2px); }
+    .deck-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 26px;
+      padding: 24px 26px;
+    }
+    .deck-summary { min-width: 0; cursor: pointer; }
+    .deck-title-row { display: flex; align-items: center; gap: 12px; }
+    .deck h2 {
+      overflow: hidden;
+      margin-bottom: 8px;
+      font-size: 1.32rem;
+      letter-spacing: -.025em;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .count-pill {
+      flex: none;
+      padding: 4px 8px;
+      color: var(--muted);
+      background: var(--soft);
+      border-radius: 99px;
+      font-size: .7rem;
+      font-weight: 700;
+    }
+    .deck-meta { display: flex; justify-content: space-between; margin-bottom: 10px; color: var(--muted); font-size: .78rem; }
+    .progress { height: 6px; overflow: hidden; background: var(--soft); border-radius: 99px; }
+    .progress > span { display: block; height: 100%; background: var(--brand); border-radius: inherit; transition: width .4s ease; }
+    .deck-actions { display: flex; gap: 8px; }
+    .deck-setup { padding: 0 26px 26px; animation: reveal .24s ease both; }
+    .setup-panel { padding: 24px; background: #f5f7f2; border: 1px solid var(--line); border-radius: 17px; }
+    @keyframes reveal { from { opacity: 0; transform: translateY(-7px); } }
+    .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+    .setting-full { grid-column: 1 / -1; }
+    .field-label { display: block; margin-bottom: 9px; color: var(--muted); font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+    .segment {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 1fr;
+      gap: 4px;
+      padding: 4px;
+      background: #e9ede7;
+      border-radius: 12px;
+    }
+    .segment button {
+      min-height: 38px;
+      padding: 5px 8px;
+      border: 0;
+      border-radius: 9px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      font-size: .76rem;
+      font-weight: 700;
+    }
+    .segment button.active { color: var(--ink); background: white; box-shadow: 0 2px 7px rgba(20, 35, 29, .08); }
+    .option-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 8px;
+    }
+    .option-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 52px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--muted);
+      background: white;
+      cursor: pointer;
+      font-size: .8rem;
+      font-weight: 700;
+      text-align: left;
+      transition: border-color .18s ease, background .18s ease, transform .18s ease;
+    }
+    .option-card:hover { transform: translateY(-1px); border-color: #bbc5bc; }
+    .option-card.active { color: var(--brand-dark); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand) 45%, white); }
+    .option-icon {
+      display: grid;
+      flex: none;
+      place-items: center;
+      width: 29px;
+      height: 29px;
+      border-radius: 9px;
+      background: var(--soft);
+      font-size: .95rem;
+    }
+    .option-card.active .option-icon { background: rgba(255, 255, 255, .72); }
+    .sub-setting { margin-top: 12px; padding: 13px; background: rgba(255,255,255,.62); border: 1px solid var(--line); border-radius: 13px; }
+    .sub-setting .option-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sub-setting .option-icon { width: 42px; font-size: .78rem; letter-spacing: -.08em; white-space: nowrap; }
+    .check-row { display: flex; flex-wrap: wrap; gap: 9px; }
+    .check {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 0 13px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      cursor: pointer;
+      font-size: .82rem;
+      font-weight: 600;
+    }
+    .check:has(input:checked) { color: var(--brand-dark); background: var(--brand-soft); border-color: #a7d4bf; }
+    input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--brand); }
+    .empty {
+      display: grid;
+      place-items: center;
+      min-height: 420px;
+      padding: 48px 24px;
+      text-align: center;
+      background: rgba(255, 255, 255, .62);
+      border: 1px dashed #cfd5ce;
+      border-radius: 28px;
+    }
+    .empty-visual {
+      position: relative;
+      width: 112px;
+      height: 96px;
+      margin: 0 auto 28px;
+    }
+    .mini-card {
+      position: absolute;
+      inset: 8px 12px;
+      display: grid;
+      place-items: center;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 12px 28px rgba(24, 42, 34, .09);
+      font-size: 1.7rem;
+      font-weight: 700;
+    }
+    .mini-card:first-child { transform: rotate(-8deg) translate(-10px, 3px); color: var(--brand); }
+    .mini-card:last-child { transform: rotate(6deg) translate(11px, -3px); color: var(--coral); }
+    .empty h2 { margin-bottom: 10px; font-size: 1.5rem; }
+    .empty p { max-width: 430px; margin-bottom: 24px; color: var(--muted); line-height: 1.8; }
+
+    .editor-main { width: min(900px, 100%); margin: 0 auto; padding: 38px 20px 90px; }
+    .editor-head { margin-bottom: 30px; }
+    .editor-head h1 { margin-bottom: 8px; font-size: clamp(1.8rem, 4vw, 2.6rem); letter-spacing: -.045em; }
+    .editor-head p { color: var(--muted); }
+    .stack { display: grid; gap: 20px; }
+    .panel { padding: clamp(20px, 4vw, 28px); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 5px 20px rgba(28, 42, 36, .035); }
+    .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 17px; }
+    .panel-title h2 { margin: 0; font-size: 1.03rem; }
+    .input, .textarea {
+      width: 100%;
+      border: 1px solid #ccd3cb;
+      border-radius: 13px;
+      color: var(--ink);
+      background: #fbfcf9;
+      transition: border-color .18s ease, box-shadow .18s ease;
+    }
+    .input { min-height: 50px; padding: 0 15px; }
+    .textarea { min-height: 120px; padding: 14px 15px; resize: vertical; line-height: 1.7; }
+    .input:focus, .textarea:focus { outline: 0; border-color: var(--brand); box-shadow: 0 0 0 4px rgba(28, 107, 80, .1); background: white; }
+    .hint { margin: 8px 0 0; color: var(--muted); font-size: .78rem; line-height: 1.6; }
+    .import-panel { background: #1b2924; border-color: #1b2924; color: white; }
+    .import-panel .field-label, .import-panel .hint { color: #aebcb6; }
+    .import-panel .textarea { color: white; background: #111b17; border-color: #364640; }
+    .cards { display: grid; gap: 11px; }
+    .card-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(110px, .55fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 11px;
+      background: #f8f9f6;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+    }
+    .remove {
+      width: 42px;
+      height: 42px;
+      border: 0;
+      border-radius: 11px;
+      color: #a44235;
+      background: transparent;
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+    .remove:hover { background: var(--coral-soft); }
+
+    .play-shell {
+      height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      color: #f5f6f1;
+      background:
+        radial-gradient(circle at 50% 30%, #243a32 0, #14231e 48%, #0e1814 100%);
+    }
+    .play-top {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: max(16px, env(safe-area-inset-top)) clamp(18px, 4vw, 38px) 12px;
+    }
+    .round {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 50%;
+      color: white;
+      background: rgba(255,255,255,.08);
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+    }
+    .round:hover { background: rgba(255,255,255,.14); }
+    .play-count { color: #c7d0cc; font-size: .8rem; font-weight: 700; letter-spacing: .14em; }
+    .part-tag { justify-self: end; padding: 8px 12px; color: #c7d0cc; background: rgba(255,255,255,.07); border-radius: 99px; font-size: .72rem; font-weight: 700; }
+    .play-progress {
+      height: 4px;
+      margin: 0 clamp(22px, 5vw, 60px);
+      overflow: hidden;
+      background: rgba(255,255,255,.1);
+      border-radius: 99px;
+    }
+    .play-progress span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: #78d2a9;
+      border-radius: inherit;
+      transition: width .35s ease;
+    }
+    .play-area { position: relative; flex: 1; display: grid; place-items: center; min-height: 0; padding: 16px clamp(18px, 5vw, 60px); }
+    .study-card {
+      width: min(820px, 100%);
+      height: min(58vh, 520px);
+      perspective: 1600px;
+      cursor: grab;
+      user-select: none;
+      touch-action: pan-y;
+      transition: transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s ease;
+    }
+    .study-card.moving { transition: none; }
+    .card-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .45s cubic-bezier(.2,.75,.25,1); }
+    .card-inner.flipped { transform: rotateX(180deg); }
+    .card-face {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: clamp(30px, 7vw, 72px);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.42);
+      border-radius: clamp(24px, 4vw, 34px);
+      backface-visibility: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,.28);
+    }
+    .card-front { color: var(--ink); background: #fffefa; }
+    .card-back { color: #123c2e; background: #e6f3ec; transform: rotateX(180deg); }
+    .completion-face {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: center;
+      background:
+        radial-gradient(circle at 50% 10%, rgba(194, 235, 215, .78), transparent 42%),
+        #fffefa;
+    }
+    .completion-badge {
+      display: grid;
+      place-items: center;
+      width: 78px;
+      height: 78px;
+      margin-bottom: 24px;
+      border-radius: 24px;
+      color: white;
+      background: var(--brand);
+      box-shadow: 0 16px 32px color-mix(in srgb, var(--brand) 28%, transparent);
+      font-size: 2.2rem;
+      animation: badge-in .55s cubic-bezier(.2, 1.5, .4, 1) both;
+    }
+    .completion-kicker { margin-bottom: 9px; color: var(--brand); font-size: .72rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+    .completion-face h2 { margin-bottom: 10px; font-size: clamp(2rem, 6vw, 3.8rem); letter-spacing: -.05em; }
+    .completion-face p { margin-bottom: 26px; color: var(--muted); font-size: clamp(.9rem, 2vw, 1.05rem); }
+    .completion-actions { display: flex; justify-content: center; gap: 10px; }
+    .completion-controls { opacity: .28; pointer-events: none; }
+    .spark {
+      position: absolute;
+      width: 9px;
+      height: 9px;
+      border-radius: 3px;
+      background: var(--spark);
+      animation: sparkle 1.8s ease-in-out infinite alternate;
+    }
+    .spark.one { top: 18%; left: 17%; --spark: #e6b84c; transform: rotate(18deg); }
+    .spark.two { top: 25%; right: 16%; --spark: #d66c74; animation-delay: -.7s; }
+    .spark.three { bottom: 20%; left: 12%; --spark: #61a9c2; animation-delay: -.3s; }
+    .spark.four { right: 11%; bottom: 22%; --spark: #71af8f; transform: rotate(45deg); animation-delay: -1s; }
+    @keyframes badge-in { from { opacity: 0; transform: scale(.55) rotate(-12deg); } }
+    @keyframes sparkle { to { transform: translateY(-7px) rotate(50deg) scale(1.3); opacity: .55; } }
+    .play-text {
+      width: 100%;
+      text-align: center;
+      font-size: clamp(2.2rem, 7vw, 5.4rem);
+      font-weight: 700;
+      line-height: 1.22;
+      letter-spacing: -.045em;
+      overflow-wrap: anywhere;
+    }
+    .swipe-label {
+      position: absolute;
+      top: 50%;
+      z-index: 0;
+      padding: 13px 17px;
+      border: 2px solid currentColor;
+      border-radius: 13px;
+      font-size: clamp(1rem, 3vw, 1.4rem);
+      font-weight: 700;
+      opacity: 0;
+      transform: translateY(-50%) rotate(-8deg);
+    }
+    .swipe-label.left { left: 8%; color: #ff8f7e; }
+    .swipe-label.right { right: 8%; color: #72d5a9; transform: translateY(-50%) rotate(8deg); }
+    .play-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(9px, 2.2vw, 22px);
+      padding: 12px 16px max(22px, env(safe-area-inset-bottom));
+    }
+    .control {
+      display: grid;
+      place-items: center;
+      width: clamp(50px, 10vw, 66px);
+      height: clamp(50px, 10vw, 66px);
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 50%;
+      color: white;
+      background: rgba(255,255,255,.08);
+      cursor: pointer;
+      font-size: 1.25rem;
+      backdrop-filter: blur(10px);
+      transition: transform .18s ease, background .18s ease;
+    }
+    .control:hover { transform: translateY(-2px); background: rgba(255,255,255,.14); }
+    .control.large { width: clamp(58px, 12vw, 78px); height: clamp(58px, 12vw, 78px); }
+    .control.miss { color: #ff9d8f; }
+    .control.sound { color: #a8ddc5; background: rgba(74, 151, 116, .16); }
+    .control.know { color: #72d5a9; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      z-index: 50;
+      padding: 12px 17px;
+      border-radius: 12px;
+      color: white;
+      background: #16231e;
+      box-shadow: 0 12px 36px rgba(0,0,0,.2);
+      font-size: .82rem;
+      transform: translateX(-50%);
+      animation: toast .2s ease both;
+    }
+    @keyframes toast { from { opacity: 0; transform: translate(-50%, 8px); } }
+
+    @media (max-width: 700px) {
+      .topbar { min-height: 68px; padding-inline: 18px; }
+      .brand-sub { display: none; }
+      .header-actions { gap: 8px; }
+      .theme-picker summary { width: 40px; height: 40px; }
+      .theme-options { gap: 7px; padding: 10px; }
+      .theme-dot { width: 17px; height: 17px; border-width: 2px; }
+      .header-actions .btn-primary { width: 44px; padding: 0; font-size: 0; }
+      .header-actions .btn-primary .icon { font-size: 1.2rem; }
+      .hero { align-items: start; flex-direction: column; margin-bottom: 26px; }
+      .hero .btn { width: 100%; }
+      .deck-main { grid-template-columns: 1fr; gap: 18px; padding: 21px; }
+      .deck-actions .btn { flex: 1; }
+      .deck-setup { padding: 0 14px 14px; }
+      .setup-panel { padding: 18px; }
+      .settings-grid { grid-template-columns: 1fr; gap: 18px; }
+      .setting-full { grid-column: auto; }
+      .card-row { grid-template-columns: 1fr 1fr 42px; }
+      .card-row .part-input { grid-column: 1 / 3; }
+      .card-row .remove { grid-column: 3; grid-row: 1 / 3; }
+      .play-top { grid-template-columns: 1fr auto 1fr; }
+      .study-card { height: min(54vh, 480px); }
+      .completion-actions { width: 100%; flex-direction: column; }
+      .completion-actions .btn { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    const STORAGE_KEY = "edu_flashcards_data";
+    const THEME_KEY = "edu_flashcards_theme";
+    const AUTO_PLAY_WAIT_MS = 2500;
+
+    const state = {
+      view: "list",
+      decks: [],
+      editingDeck: null,
+      expandedDeckId: null,
+      playConfig: {
+        deckId: null,
+        targetStatus: "all",
+        selectedParts: [],
+        frontSide: "en",
+        shuffle: false,
+        autoPlayAudio: true,
+        displayMode: "normal",
+        typewriterSpeed: 150,
+        autoPlayMode: "manual"
+      },
+      playState: {
+        cards: [],
+        currentIndex: 0,
+        isFlipped: false,
+        completed: false,
+        typingInterval: null,
+        autoPlayTimeout: null
+      }
+    };
+
+    const app = document.getElementById("app");
+    const uid = () => Math.random().toString(36).slice(2, 10);
+    const escapeHtml = value => String(value ?? "")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+
+    function loadData() {
+      try { state.decks = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+      catch { state.decks = []; }
+    }
+    function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.decks)); }
+    function toast(message) {
+      document.querySelector(".toast")?.remove();
+      const el = document.createElement("div");
+      el.className = "toast";
+      el.textContent = message;
+      document.body.append(el);
+      setTimeout(() => el.remove(), 2200);
+    }
+    function brand() {
+      return `<div class="brand"><span class="brand-mark">F</span><div><div class="brand-name">Flashcards</div><div class="brand-sub">English learning</div></div></div>`;
+    }
+    function themePicker() {
+      const themes = [
+        ["forest", "#1c6b50", "フォレスト"],
+        ["ocean", "#376b8c", "オーシャン"],
+        ["indigo", "#5b5f97", "インディゴ"],
+        ["plum", "#855d78", "プラム"],
+        ["clay", "#a05f49", "クレイ"],
+        ["mustard", "#927126", "マスタード"]
+      ];
+      const current = document.documentElement.dataset.theme || "forest";
+      return `<details class="theme-picker">
+        <summary aria-label="テーマカラーを選ぶ" title="テーマカラー">🎨</summary>
+        <div class="theme-options" aria-label="テーマカラー">${themes.map(([id, color, label]) =>
+          `<button class="theme-dot ${current === id ? "active" : ""}" style="--dot:${color}" aria-label="${label}" title="${label}" onclick="setTheme('${id}')"></button>`).join("")}</div>
+      </details>`;
+    }
+    function setTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      localStorage.setItem(THEME_KEY, theme);
+      render();
+    }
+    function render() {
+      clearAutoPlayTimer();
+      app.innerHTML = state.view === "list" ? renderList() : state.view === "edit" ? renderEdit() : renderPlay();
+      if (state.view === "edit") renderEditCards();
+      if (state.view === "play") {
+        updatePlayCard(true);
+        setupSwipeEvents();
+      }
+    }
+
+    function renderList() {
+      const content = state.decks.length ? `<div class="deck-list">${state.decks.map(renderDeck).join("")}</div>` : `
+        <div class="empty">
+          <div>
+            <div class="empty-visual"><div class="mini-card">A</div><div class="mini-card">あ</div></div>
+            <h2>最初の単語帳をつくりましょう</h2>
+            <p>英語と日本語を登録するだけ。Excelからまとめて貼り付けることもできます。</p>
+            <button class="btn btn-primary" onclick="createNewDeck()"><span class="icon">＋</span> 単語帳をつくる</button>
+          </div>
+        </div>`;
+      return `<div class="shell">
+        <header class="topbar">${brand()}<div class="header-actions">${themePicker()}<button class="btn btn-primary" onclick="createNewDeck()"><span class="icon">＋</span> 新しい単語帳</button></div></header>
+        <main class="main">
+          ${content}
+        </main>
+      </div>`;
+    }
+
+    function renderDeck(deck) {
+      const total = deck.cards.length;
+      const learned = deck.cards.filter(card => card.status === "learned").length;
+      const percent = total ? Math.round(learned / total * 100) : 0;
+      const expanded = state.expandedDeckId === deck.id;
+      const parts = [...new Set(deck.cards.map(card => card.part).filter(Boolean))].sort();
+      return `<article class="deck">
+        <div class="deck-main">
+          <div class="deck-summary" onclick="toggleSetup('${deck.id}')">
+            <div class="deck-title-row"><h2>${escapeHtml(deck.name)}</h2><span class="count-pill">${total} cards</span></div>
+            <div class="deck-meta"><span>${learned} 語をマスター</span><span>${percent}%</span></div>
+            <div class="progress" aria-label="学習進捗 ${percent}%"><span style="width:${percent}%"></span></div>
+          </div>
+          <div class="deck-actions">
+            <button class="btn btn-secondary" onclick="event.stopPropagation(); editDeck('${deck.id}')">編集</button>
+            <button class="btn ${expanded ? "btn-secondary" : "btn-primary"}" onclick="event.stopPropagation(); toggleSetup('${deck.id}')">${expanded ? "設定を閉じる" : "学習する"}</button>
+          </div>
+        </div>
+        ${expanded ? renderSetup(deck, parts) : ""}
+      </article>`;
+    }
+
+    function segment(options, current, handler) {
+      return `<div class="segment">${options.map(([value, label]) =>
+        `<button class="${current === value ? "active" : ""}" onclick="${handler}('${value}')">${label}</button>`).join("")}</div>`;
+    }
+
+    function choiceCards(options, current, handler) {
+      return `<div class="option-cards">${options.map(([value, icon, label]) =>
+        `<button class="option-card ${current === value ? "active" : ""}" aria-pressed="${current === value}" onclick="${handler}('${value}')"><span class="option-icon">${icon}</span><span>${label}</span></button>`).join("")}</div>`;
+    }
+
+    function renderSetup(deck, parts) {
+      const c = state.playConfig;
+      const playKind = c.autoPlayMode === "manual" ? "manual" : "auto";
+      return `<div class="deck-setup"><div class="setup-panel">
+        <div class="settings-grid">
+          <div><span class="field-label">学習するカード</span>${choiceCards([["all","◎","すべて"],["unlearned","△","未習得"],["learned","✓","習得済み"]], c.targetStatus, "setTarget")}</div>
+          <div>
+            <span class="field-label">進め方</span>
+            ${choiceCards([["manual","☝","手動で進める"],["auto","▶","オート再生"]], playKind, "setPlayKind")}
+            ${playKind === "auto" ? `<div class="sub-setting"><span class="field-label">再生する順番</span>${choiceCards([["en_only","A","英語のみ"],["ja_only","あ","日本語のみ"],["en_ja","A→あ","英語→日本語"],["ja_en","あ→A","日本語→英語"]], c.autoPlayMode, "setAutoPlayMode")}</div>` : ""}
+          </div>
+          <div>
+            <span class="field-label">表示</span>
+            ${choiceCards([["normal","▣","一度に表示"],["typewriter","⌨","1文字ずつ"]], c.displayMode, "setDisplayMode")}
+            ${c.displayMode === "typewriter" ? `<div style="margin-top:10px"><span class="field-label">文字のスピード</span>${segment([["250","ゆっくり"],["150","ふつう"],["70","速い"]], String(c.typewriterSpeed), "setTypewriterSpeed")}</div>` : ""}
+          </div>
+          ${c.autoPlayMode === "manual" ? `<div><span class="field-label">最初に表示する面</span>${choiceCards([["en","A","英語"],["ja","あ","日本語"]], c.frontSide, "setFrontSide")}</div>` : ""}
+          <div class="${parts.length ? "" : "setting-full"}"><span class="field-label">オプション</span><div class="check-row">
+            <label class="check"><span class="option-icon">🔊</span><input type="checkbox" ${c.autoPlayAudio ? "checked" : ""} onchange="setOption('autoPlayAudio', this.checked)"> 自動で発音</label>
+            <label class="check"><span class="option-icon">⇄</span><input type="checkbox" ${c.shuffle ? "checked" : ""} onchange="setOption('shuffle', this.checked)"> シャッフル</label>
+          </div></div>
+          ${parts.length ? `<div><span class="field-label">パート</span><div class="check-row">${parts.map(part =>
+            `<label class="check"><input type="checkbox" ${c.selectedParts.includes(part) ? "checked" : ""} onchange="togglePartSelection('${escapeHtml(part)}')"> ${escapeHtml(part)}</label>`).join("")}</div></div>` : ""}
+          <div class="setting-full"><button class="btn btn-primary btn-wide" onclick="startPlay('${deck.id}')">学習をスタート <span class="icon">→</span></button></div>
+        </div>
+      </div></div>`;
+    }
+
+    function setTarget(value) { state.playConfig.targetStatus = value; render(); }
+    function setDisplayMode(value) { state.playConfig.displayMode = value; render(); }
+    function setTypewriterSpeed(value) { state.playConfig.typewriterSpeed = Number(value); render(); }
+    function setFrontSide(value) { state.playConfig.frontSide = value; render(); }
+    function setOption(key, value) { state.playConfig[key] = value; render(); }
+    function setPlayKind(kind) {
+      if (kind === "manual") state.playConfig.autoPlayMode = "manual";
+      else if (state.playConfig.autoPlayMode === "manual") {
+        state.playConfig.autoPlayMode = "en_ja";
+        state.playConfig.frontSide = "en";
+      }
+      render();
+    }
+    function setAutoPlayMode(mode) {
+      state.playConfig.autoPlayMode = mode;
+      if (["en_only","en_ja"].includes(mode)) state.playConfig.frontSide = "en";
+      if (["ja_only","ja_en"].includes(mode)) state.playConfig.frontSide = "ja";
+      render();
+    }
+    function togglePartSelection(part) {
+      const selected = state.playConfig.selectedParts;
+      const index = selected.indexOf(part);
+      index >= 0 ? selected.splice(index, 1) : selected.push(part);
+      render();
+    }
+    function toggleSetup(id) {
+      state.expandedDeckId = state.expandedDeckId === id ? null : id;
+      if (state.expandedDeckId) {
+        const deck = state.decks.find(item => item.id === id);
+        state.playConfig.selectedParts = [...new Set(deck.cards.map(card => card.part).filter(Boolean))];
+      }
+      render();
+    }
+
+    function createNewDeck() {
+      state.editingDeck = { id: "deck-" + uid(), name: "新しい単語帳", cards: [] };
+      state.view = "edit";
+      render();
+    }
+    function editDeck(id) {
+      const deck = state.decks.find(item => item.id === id);
+      if (!deck) return;
+      state.editingDeck = JSON.parse(JSON.stringify(deck));
+      state.view = "edit";
+      render();
+    }
+    function renderEdit() {
+      return `<div class="shell">
+        <header class="topbar">
+          <button class="btn btn-ghost" onclick="cancelEdit()">← 戻る</button>
+          ${brand()}
+          <button class="btn btn-primary" onclick="saveEdit()">保存</button>
+        </header>
+        <main class="editor-main">
+          <div class="editor-head"><p class="eyebrow">Deck editor</p><h1>単語帳を編集</h1><p>授業や単元ごとに、カードを整理できます。</p></div>
+          <div class="stack">
+            <section class="panel"><label class="field-label" for="deckName">単語帳の名前</label><input class="input" id="deckName" value="${escapeHtml(state.editingDeck.name)}" placeholder="例：Unit 3 — Travel"></section>
+            <section class="panel import-panel">
+              <div class="panel-title"><h2>Excelからまとめて追加</h2></div>
+              <label class="field-label" for="importArea">英語・日本語・パートの順に貼り付け</label>
+              <textarea class="textarea" id="importArea" placeholder="apple&#9;りんご&#9;Unit 1&#10;banana&#9;バナナ&#9;Unit 1"></textarea>
+              <p class="hint">Excelの3列をコピーして、そのまま貼り付けられます。</p>
+              <button class="btn btn-secondary btn-wide" style="margin-top:16px" onclick="importCards()">カードに追加</button>
+            </section>
+            <section class="panel">
+              <div class="panel-title"><h2>カード <span id="cardCount" class="count-pill"></span></h2><button class="btn btn-secondary" onclick="addEmptyCard()">＋ 1枚追加</button></div>
+              <div id="editCards" class="cards"></div>
+            </section>
+            <button class="btn btn-danger btn-wide" onclick="deleteDeck()">この単語帳を削除</button>
+          </div>
+        </main>
+      </div>`;
+    }
+    function renderEditCards() {
+      const cards = state.editingDeck.cards;
+      document.getElementById("cardCount").textContent = `${cards.length}枚`;
+      document.getElementById("editCards").innerHTML = cards.length ? cards.map((card, index) => `
+        <div class="card-row">
+          <input class="input" value="${escapeHtml(card.en)}" placeholder="English" oninput="updateCard(${index}, 'en', this.value)">
+          <input class="input" value="${escapeHtml(card.ja)}" placeholder="日本語" oninput="updateCard(${index}, 'ja', this.value)">
+          <input class="input part-input" value="${escapeHtml(card.part)}" placeholder="Part" oninput="updateCard(${index}, 'part', this.value)">
+          <button class="remove" aria-label="カードを削除" onclick="removeCard(${index})">×</button>
+        </div>`).join("") : `<div class="empty" style="min-height:190px"><div><h2>カードはまだありません</h2><p>1枚ずつ追加するか、Excelからまとめて貼り付けてください。</p></div></div>`;
+    }
+    function updateCard(index, key, value) { state.editingDeck.cards[index][key] = value; }
+    function addEmptyCard() {
+      state.editingDeck.cards.push({ id: "c-" + uid(), en: "", ja: "", part: "", status: "unlearned" });
+      renderEditCards();
+      document.querySelector(".card-row:last-child input")?.focus();
+    }
+    function removeCard(index) { state.editingDeck.cards.splice(index, 1); renderEditCards(); }
+    function importCards() {
+      const area = document.getElementById("importArea");
+      let count = 0;
+      area.value.split(/\r?\n/).forEach(line => {
+        const [en = "", ja = "", part = ""] = line.split("\t").map(value => value.trim());
+        if (en || ja) {
+          state.editingDeck.cards.push({ id: "c-" + uid(), en, ja, part, status: "unlearned" });
+          count++;
+        }
+      });
+      if (!count) return toast("追加できるデータが見つかりませんでした");
+      area.value = "";
+      renderEditCards();
+      toast(`${count}枚のカードを追加しました`);
+    }
+    function cancelEdit() { state.editingDeck = null; state.view = "list"; render(); }
+    function saveEdit() {
+      state.editingDeck.name = document.getElementById("deckName").value.trim() || "名称未設定の単語帳";
+      state.editingDeck.cards = state.editingDeck.cards.filter(card => card.en.trim() || card.ja.trim());
+      const index = state.decks.findIndex(deck => deck.id === state.editingDeck.id);
+      index >= 0 ? state.decks[index] = state.editingDeck : state.decks.push(state.editingDeck);
+      saveData();
+      state.editingDeck = null;
+      state.view = "list";
+      render();
+      toast("単語帳を保存しました");
+    }
+    function deleteDeck() {
+      const exists = state.decks.some(deck => deck.id === state.editingDeck.id);
+      if (!exists) return cancelEdit();
+      if (!confirm("この単語帳を削除しますか？")) return;
+      state.decks = state.decks.filter(deck => deck.id !== state.editingDeck.id);
+      saveData();
+      cancelEdit();
+    }
+
+    function startPlay(deckId) {
+      const deck = state.decks.find(item => item.id === deckId);
+      let cards = [...deck.cards];
+      if (state.playConfig.targetStatus !== "all") cards = cards.filter(card => card.status === state.playConfig.targetStatus);
+      if (state.playConfig.selectedParts.length) cards = cards.filter(card => !card.part || state.playConfig.selectedParts.includes(card.part));
+      if (!cards.length) return toast("条件に合うカードがありません");
+      if (state.playConfig.shuffle) {
+        for (let i = cards.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [cards[i], cards[j]] = [cards[j], cards[i]];
+        }
+      }
+      state.playConfig.deckId = deckId;
+      state.playState.cards = cards;
+      state.playState.currentIndex = 0;
+      state.playState.isFlipped = false;
+      state.playState.completed = false;
+      state.view = "play";
+      render();
+    }
+    function renderPlay() {
+      return `<div class="play-shell">
+        <header class="play-top">
+          <button class="round" aria-label="学習を終了" onclick="endPlay()">×</button>
+          <div class="play-count" id="playCount"></div>
+          <div class="part-tag" id="playPart"></div>
+        </header>
+        <div class="play-progress" aria-label="学習の進捗"><span id="playProgressBar"></span></div>
+        <main class="play-area">
+          <div class="swipe-label left" id="missLabel">もう一度</div>
+          <div class="swipe-label right" id="knowLabel">覚えた</div>
+          <div class="study-card" id="studyCard" onclick="flipCard(event)">
+            <div class="card-inner" id="cardInner">
+              <section class="card-face card-front"><div class="play-text" id="frontText"></div></section>
+              <section class="card-face card-back"><div class="play-text" id="backText"></div></section>
+            </div>
+          </div>
+        </main>
+        <nav class="play-controls" aria-label="学習操作">
+          <button class="control" aria-label="前のカード" onclick="prevCard()">←</button>
+          <button class="control large miss" aria-label="もう一度" onclick="markCard('unlearned')">×</button>
+          <button class="control large sound" aria-label="発音を聞く" onclick="playAudio()">◖))</button>
+          <button class="control large know" aria-label="覚えた" onclick="markCard('learned')">✓</button>
+          <button class="control" aria-label="次のカード" onclick="nextCard()">→</button>
+        </nav>
+      </div>`;
+    }
+    function clearAutoPlayTimer() {
+      if (state.playState.autoPlayTimeout) clearTimeout(state.playState.autoPlayTimeout);
+      state.playState.autoPlayTimeout = null;
+    }
+    function typeText(element, text, done) {
+      clearInterval(state.playState.typingInterval);
+      element.textContent = "";
+      let i = 0;
+      state.playState.typingInterval = setInterval(() => {
+        element.textContent += text.charAt(i++);
+        if (i >= text.length) { clearInterval(state.playState.typingInterval); state.playState.typingInterval = null; done?.(); }
+      }, state.playConfig.typewriterSpeed);
+    }
+    function handleAutoPlayNext() {
+      const mode = state.playConfig.autoPlayMode;
+      if (mode === "manual") return;
+      state.playState.autoPlayTimeout = setTimeout(() => {
+        if (["en_ja","ja_en"].includes(mode) && !state.playState.isFlipped) flipCard();
+        else nextCard();
+      }, AUTO_PLAY_WAIT_MS);
+    }
+    function updatePlayCard(forceFront = true) {
+      const card = state.playState.cards[state.playState.currentIndex];
+      if (!card) return;
+      const frontIsEnglish = state.playConfig.frontSide === "en";
+      const front = frontIsEnglish ? card.en : card.ja;
+      const back = frontIsEnglish ? card.ja : card.en;
+      document.getElementById("playCount").textContent = `${String(state.playState.currentIndex + 1).padStart(2,"0")} / ${String(state.playState.cards.length).padStart(2,"0")}`;
+      document.getElementById("playProgressBar").style.width = `${(state.playState.currentIndex + 1) / state.playState.cards.length * 100}%`;
+      document.getElementById("playPart").textContent = card.part || "ALL";
+      document.getElementById("backText").textContent = back;
+      if (forceFront) {
+        state.playState.isFlipped = false;
+        document.getElementById("cardInner").classList.remove("flipped");
+        const studyCard = document.getElementById("studyCard");
+        studyCard.style.transform = "";
+        studyCard.style.opacity = "1";
+      }
+      const complete = () => {
+        if (state.playConfig.autoPlayAudio) playAudio();
+        handleAutoPlayNext();
+      };
+      if (state.playConfig.displayMode === "typewriter" && forceFront) typeText(document.getElementById("frontText"), front, complete);
+      else { document.getElementById("frontText").textContent = front; complete(); }
+    }
+    function flipCard() {
+      if (state.playState.completed) return;
+      if (state.playState.typingInterval) {
+        clearInterval(state.playState.typingInterval);
+        state.playState.typingInterval = null;
+        const card = state.playState.cards[state.playState.currentIndex];
+        document.getElementById("frontText").textContent = state.playConfig.frontSide === "en" ? card.en : card.ja;
+        return handleAutoPlayNext();
+      }
+      state.playState.isFlipped = !state.playState.isFlipped;
+      document.getElementById("cardInner").classList.toggle("flipped", state.playState.isFlipped);
+      clearAutoPlayTimer();
+      if (state.playConfig.autoPlayAudio) setTimeout(playAudio, 180);
+      handleAutoPlayNext();
+    }
+    function nextCard() {
+      clearAutoPlayTimer();
+      if (state.playState.completed) return;
+      if (state.playState.currentIndex < state.playState.cards.length - 1) {
+        state.playState.currentIndex++;
+        updatePlayCard(true);
+      } else showCompletion();
+    }
+    function prevCard() {
+      clearAutoPlayTimer();
+      if (state.playState.completed) return;
+      if (state.playState.currentIndex > 0) { state.playState.currentIndex--; updatePlayCard(true); }
+    }
+    function markCard(status, skipNext = false) {
+      if (state.playState.completed) return;
+      const card = state.playState.cards[state.playState.currentIndex];
+      const deck = state.decks.find(item => item.id === state.playConfig.deckId);
+      const original = deck?.cards.find(item => item.id === card.id);
+      if (original) original.status = status;
+      card.status = status;
+      saveData();
+      if (!skipNext) {
+        if (state.playState.currentIndex < state.playState.cards.length - 1) nextCard();
+        else showCompletion();
+      }
+    }
+    function showCompletion() {
+      if (state.playState.completed) return;
+      clearAutoPlayTimer();
+      clearInterval(state.playState.typingInterval);
+      state.playState.completed = true;
+      state.playState.isFlipped = false;
+      const inner = document.getElementById("cardInner");
+      inner.classList.remove("flipped");
+      inner.innerHTML = `
+        <section class="card-face card-front completion-face">
+          <i class="spark one"></i><i class="spark two"></i><i class="spark three"></i><i class="spark four"></i>
+          <div class="completion-badge">✓</div>
+          <div class="completion-kicker">Session complete</div>
+          <h2>Nice work!</h2>
+          <p>${state.playState.cards.length}枚のカードを最後まで学習しました。</p>
+          <div class="completion-actions">
+            <button class="btn btn-secondary" onclick="event.stopPropagation(); restartPlay()">↻ もう一度</button>
+            <button class="btn btn-primary" onclick="event.stopPropagation(); endPlay()">一覧へ戻る</button>
+          </div>
+        </section>`;
+      document.getElementById("playProgressBar").style.width = "100%";
+      document.querySelector(".play-controls").classList.add("completion-controls");
+    }
+    function restartPlay() {
+      state.playState.currentIndex = 0;
+      state.playState.isFlipped = false;
+      state.playState.completed = false;
+      render();
+    }
+    function playAudio() {
+      const card = state.playState.cards[state.playState.currentIndex];
+      if (!card || !("speechSynthesis" in window)) return;
+      const frontEnglish = state.playConfig.frontSide === "en";
+      const english = state.playState.isFlipped ? !frontEnglish : frontEnglish;
+      const text = english ? card.en : card.ja;
+      speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = english ? "en-US" : "ja-JP";
+      utterance.rate = .9;
+      speechSynthesis.speak(utterance);
+    }
+    function endPlay() {
+      speechSynthesis?.cancel();
+      clearInterval(state.playState.typingInterval);
+      clearAutoPlayTimer();
+      state.view = "list";
+      render();
+    }
+    function setupSwipeEvents() {
+      const card = document.getElementById("studyCard");
+      let startX = 0, startY = 0, dx = 0, dy = 0, dragging = false;
+      const threshold = Math.min(innerWidth * .22, 190);
+      const point = event => event.touches?.[0] || event;
+      function start(event) {
+        if (state.playState.completed) return;
+        dragging = true;
+        clearAutoPlayTimer();
+        const p = point(event);
+        startX = p.clientX; startY = p.clientY;
+        card.classList.add("moving");
+      }
+      function move(event) {
+        if (!dragging) return;
+        const p = point(event);
+        dx = p.clientX - startX; dy = p.clientY - startY;
+        if (Math.abs(dx) > Math.abs(dy) && event.cancelable) event.preventDefault();
+        card.style.transform = `translate(${dx}px, ${dy * .35}px) rotate(${dx * .035}deg)`;
+        document.getElementById("missLabel").style.opacity = dx < 0 ? Math.min(Math.abs(dx) / threshold, 1) : 0;
+        document.getElementById("knowLabel").style.opacity = dx > 0 ? Math.min(dx / threshold, 1) : 0;
+      }
+      function end() {
+        if (!dragging) return;
+        dragging = false;
+        card.classList.remove("moving");
+        document.getElementById("missLabel").style.opacity = 0;
+        document.getElementById("knowLabel").style.opacity = 0;
+        if (Math.abs(dx) > threshold) {
+          const status = dx > 0 ? "learned" : "unlearned";
+          card.style.transform = `translateX(${dx > 0 ? innerWidth : -innerWidth}px) rotate(${dx > 0 ? 24 : -24}deg)`;
+          card.style.opacity = 0;
+          setTimeout(() => markCard(status), 260);
+        } else {
+          card.style.transform = "";
+          handleAutoPlayNext();
+        }
+        dx = dy = 0;
+      }
+      card.addEventListener("mousedown", start);
+      card.addEventListener("touchstart", start, { passive: true });
+      window.addEventListener("mousemove", move);
+      window.addEventListener("touchmove", move, { passive: false });
+      window.addEventListener("mouseup", end);
+      window.addEventListener("touchend", end);
+    }
+    document.addEventListener("keydown", event => {
+      if (state.view !== "play") return;
+      if ([" ", "Enter"].includes(event.key)) { event.preventDefault(); flipCard(); }
+      else if (event.key === "ArrowRight") nextCard();
+      else if (event.key === "ArrowLeft") prevCard();
+      else if (event.key === "ArrowUp" || event.key === "1") markCard("learned");
+      else if (event.key === "ArrowDown" || event.key === "2") markCard("unlearned");
+      else if (["s","S","p","P"].includes(event.key)) playAudio();
+      else if (event.key === "Escape") endPlay();
+    });
+
+    document.documentElement.dataset.theme = localStorage.getItem(THEME_KEY) || "forest";
+    loadData();
+    render();
+  </script>
+</body>
+</html>

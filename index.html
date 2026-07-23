@@ -367,7 +367,7 @@
     .cards { display: grid; gap: 11px; }
     .card-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(110px, .55fr) auto;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(100px, .48fr) minmax(190px, .7fr) auto;
       gap: 10px;
       align-items: center;
       padding: 11px;
@@ -375,6 +375,32 @@
       border: 1px solid var(--line);
       border-radius: 15px;
     }
+    .status-choice {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      min-height: 50px;
+      padding: 4px;
+      background: #e9ede7;
+      border-radius: 13px;
+    }
+    .status-choice button {
+      min-width: 0;
+      padding: 0 7px;
+      border: 0;
+      border-radius: 9px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      font-size: .7rem;
+      font-weight: 700;
+      white-space: nowrap;
+      transition: transform .14s ease, background .18s ease, border-color .18s ease;
+    }
+    .status-choice button:hover { background: rgba(255,255,255,.65); }
+    .status-choice button:active { transform: scale(.96); }
+    .status-choice .unlearned.active { color: #a44a3c; background: var(--coral-soft); box-shadow: 0 2px 7px rgba(164,74,60,.1); }
+    .status-choice .learned.active { color: var(--brand-dark); background: var(--brand-soft); box-shadow: 0 2px 7px rgba(28,107,80,.1); }
     .remove {
       width: 42px;
       height: 42px;
@@ -432,10 +458,11 @@
       border-radius: inherit;
       transition: width .35s ease;
     }
-    .play-area { position: relative; flex: 1; display: grid; place-items: center; min-height: 0; padding: 16px clamp(18px, 5vw, 60px); }
+    .play-area { position: relative; flex: 1; display: grid; place-items: center; min-height: 0; padding: 12px clamp(10px, 2vw, 28px); }
     .study-card {
-      width: min(820px, 100%);
-      height: min(58vh, 520px);
+      position: relative;
+      width: min(1180px, 100%);
+      height: min(64vh, 650px);
       perspective: 1600px;
       cursor: grab;
       user-select: none;
@@ -450,7 +477,7 @@
       inset: 0;
       display: grid;
       place-items: center;
-      padding: clamp(30px, 7vw, 72px);
+      padding: clamp(24px, 5vw, 68px);
       overflow: hidden;
       border: 1px solid rgba(255,255,255,.42);
       border-radius: clamp(24px, 4vw, 34px);
@@ -503,26 +530,35 @@
     .play-text {
       width: 100%;
       text-align: center;
-      font-size: clamp(2.2rem, 7vw, 5.4rem);
+      font-size: clamp(3rem, 9.5vw, 8rem);
       font-weight: 700;
-      line-height: 1.22;
+      line-height: 1.16;
       letter-spacing: -.045em;
       overflow-wrap: anywhere;
     }
+    .play-text.compact { font-size: clamp(2.35rem, 6.5vw, 5.6rem); }
+    .play-text.long { font-size: clamp(1.75rem, 4.4vw, 3.8rem); line-height: 1.28; }
     .swipe-label {
       position: absolute;
-      top: 50%;
-      z-index: 0;
-      padding: 13px 17px;
+      top: clamp(20px, 4vw, 34px);
+      z-index: 8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
       border: 2px solid currentColor;
       border-radius: 13px;
-      font-size: clamp(1rem, 3vw, 1.4rem);
+      font-size: clamp(.9rem, 2vw, 1.15rem);
       font-weight: 700;
       opacity: 0;
-      transform: translateY(-50%) rotate(-8deg);
+      background: rgba(255, 254, 250, .9);
+      box-shadow: 0 10px 28px rgba(14, 24, 20, .12);
+      backdrop-filter: blur(12px);
+      pointer-events: none;
+      transition: opacity .08s linear;
     }
-    .swipe-label.left { left: 8%; color: #ff8f7e; }
-    .swipe-label.right { right: 8%; color: #72d5a9; transform: translateY(-50%) rotate(8deg); }
+    .swipe-label.left { left: clamp(20px, 4vw, 34px); color: #d85f51; transform: rotate(-5deg); }
+    .swipe-label.right { right: clamp(20px, 4vw, 34px); color: #25845d; transform: rotate(5deg); }
     .play-controls {
       display: flex;
       align-items: center;
@@ -584,10 +620,11 @@
       .settings-grid { grid-template-columns: 1fr; gap: 18px; }
       .setting-full { grid-column: auto; }
       .card-row { grid-template-columns: 1fr 1fr 42px; }
-      .card-row .part-input { grid-column: 1 / 3; }
+      .card-row .part-input { grid-column: 1; }
+      .card-row .status-choice { grid-column: 2; }
       .card-row .remove { grid-column: 3; grid-row: 1 / 3; }
       .play-top { grid-template-columns: 1fr auto 1fr; }
-      .study-card { height: min(54vh, 480px); }
+      .study-card { height: min(58vh, 540px); }
       .completion-actions { width: 100%; flex-direction: column; }
       .completion-actions .btn { width: 100%; }
     }
@@ -841,10 +878,22 @@
           <input class="input" value="${escapeHtml(card.en)}" placeholder="English" oninput="updateCard(${index}, 'en', this.value)">
           <input class="input" value="${escapeHtml(card.ja)}" placeholder="日本語" oninput="updateCard(${index}, 'ja', this.value)">
           <input class="input part-input" value="${escapeHtml(card.part)}" placeholder="Part" oninput="updateCard(${index}, 'part', this.value)">
+          <div class="status-choice" role="group" aria-label="${escapeHtml(card.en || card.ja || `カード${index + 1}`)}の学習状態">
+            <button class="unlearned ${card.status !== "learned" ? "active" : ""}" aria-pressed="${card.status !== "learned"}" onclick="setCardStatus(${index}, 'unlearned', this.parentElement)">△ 未習得</button>
+            <button class="learned ${card.status === "learned" ? "active" : ""}" aria-pressed="${card.status === "learned"}" onclick="setCardStatus(${index}, 'learned', this.parentElement)">✓ 習得済み</button>
+          </div>
           <button class="remove" aria-label="カードを削除" onclick="removeCard(${index})">×</button>
         </div>`).join("") : `<div class="empty" style="min-height:190px"><div><h2>カードはまだありません</h2><p>1枚ずつ追加するか、Excelからまとめて貼り付けてください。</p></div></div>`;
     }
     function updateCard(index, key, value) { state.editingDeck.cards[index][key] = value; }
+    function setCardStatus(index, status, group) {
+      state.editingDeck.cards[index].status = status;
+      group.querySelectorAll("button").forEach(button => {
+        const active = button.classList.contains(status);
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+    }
     function addEmptyCard() {
       state.editingDeck.cards.push({ id: "c-" + uid(), en: "", ja: "", part: "", status: "unlearned" });
       renderEditCards();
@@ -916,9 +965,9 @@
         </header>
         <div class="play-progress" aria-label="学習の進捗"><span id="playProgressBar"></span></div>
         <main class="play-area">
-          <div class="swipe-label left" id="missLabel">もう一度</div>
-          <div class="swipe-label right" id="knowLabel">覚えた</div>
           <div class="study-card" id="studyCard" onclick="flipCard(event)">
+            <div class="swipe-label left" id="missLabel"><span>×</span> 分からない</div>
+            <div class="swipe-label right" id="knowLabel"><span>✓</span> 習得済み</div>
             <div class="card-inner" id="cardInner">
               <section class="card-face card-front"><div class="play-text" id="frontText"></div></section>
               <section class="card-face card-back"><div class="play-text" id="backText"></div></section>
@@ -961,10 +1010,18 @@
       const frontIsEnglish = state.playConfig.frontSide === "en";
       const front = frontIsEnglish ? card.en : card.ja;
       const back = frontIsEnglish ? card.ja : card.en;
+      const setTextSize = (element, text) => {
+        element.classList.toggle("compact", text.length > 20 && text.length <= 40);
+        element.classList.toggle("long", text.length > 40);
+      };
       document.getElementById("playCount").textContent = `${String(state.playState.currentIndex + 1).padStart(2,"0")} / ${String(state.playState.cards.length).padStart(2,"0")}`;
       document.getElementById("playProgressBar").style.width = `${(state.playState.currentIndex + 1) / state.playState.cards.length * 100}%`;
       document.getElementById("playPart").textContent = card.part || "ALL";
-      document.getElementById("backText").textContent = back;
+      const frontText = document.getElementById("frontText");
+      const backText = document.getElementById("backText");
+      setTextSize(frontText, front);
+      setTextSize(backText, back);
+      backText.textContent = back;
       if (forceFront) {
         state.playState.isFlipped = false;
         document.getElementById("cardInner").classList.remove("flipped");
@@ -976,8 +1033,8 @@
         if (state.playConfig.autoPlayAudio) playAudio();
         handleAutoPlayNext();
       };
-      if (state.playConfig.displayMode === "typewriter" && forceFront) typeText(document.getElementById("frontText"), front, complete);
-      else { document.getElementById("frontText").textContent = front; complete(); }
+      if (state.playConfig.displayMode === "typewriter" && forceFront) typeText(frontText, front, complete);
+      else { frontText.textContent = front; complete(); }
     }
     function flipCard() {
       if (state.playState.completed) return;

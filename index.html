@@ -1370,8 +1370,16 @@
       }
     }
     async function lookupSingleWordDirectly(word) {
-      const entries = await fetchJsonWithRetry(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, 2);
-      return { word, entries: Array.isArray(entries) ? entries : null };
+      try {
+        const entries = await fetchJsonWithRetry(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, 2);
+        return { word, entries: Array.isArray(entries) ? entries : null, error: false };
+      } catch {
+        return { word, entries: null, error: true };
+      }
+    }
+    function clearCachedPronunciation(text) {
+      const words = String(text || "").match(/[A-Za-z]+(?:['-][A-Za-z]+)*/g) || [];
+      words.forEach(word => state.pronunciationCache.delete(word.toLowerCase()));
     }
     async function lookupPronunciation(text) {
       const matches = [...String(text || "").matchAll(/[A-Za-z]+(?:['-][A-Za-z]+)*/g)].slice(0, 10);
@@ -1385,17 +1393,27 @@
           if (!Array.isArray(payload?.results)) throw new Error("pronunciation-proxy-unavailable");
           results = payload.results;
         } catch {
-          const directResults = await Promise.allSettled(missingWords.map(word => lookupSingleWordDirectly(word)));
-          results = directResults.map((result, index) => result.status === "fulfilled" ? result.value : { word: missingWords[index], entries: null });
+          results = await Promise.all(missingWords.map(word => lookupSingleWordDirectly(word)));
+        }
+        const temporarilyUnavailable = results.filter(result => result.error === true).map(result => result.word);
+        if (temporarilyUnavailable.length) {
+          await wait(600);
+          const retryResults = await Promise.all(temporarilyUnavailable.map(word => lookupSingleWordDirectly(word)));
+          const retries = new Map(retryResults.map(result => [result.word, result]));
+          results = results.map(result => retries.get(result.word) || result);
         }
         results.forEach(result => {
+          if (result.error === true) return;
           const ipa = pickIpa(Array.isArray(result.entries) ? result.entries : []);
           state.pronunciationCache.set(result.word, ipa || null);
         });
         missingWords.forEach(word => {
-          if (!state.pronunciationCache.has(word)) state.pronunciationCache.set(word, null);
+          const result = results.find(item => item.word === word);
+          if (result && result.error !== true && !state.pronunciationCache.has(word)) state.pronunciationCache.set(word, null);
         });
       }
+      const unavailableWords = uniqueWords.filter(word => !state.pronunciationCache.has(word));
+      if (unavailableWords.length) throw new Error("pronunciation-temporarily-unavailable");
       const ipaParts = [];
       let accent = "";
       let cursor = 0;
@@ -1421,6 +1439,7 @@
     async function autoFillCardPronunciation(indexOrId, silent = false, deck = state.editingDeck) {
       const card = typeof indexOrId === "string" ? deck?.cards?.find(item => item.id === indexOrId) : deck?.cards?.[indexOrId];
       if (!card?.en.trim() || state.pronunciationLoadingIds.has(card.id)) return false;
+      if (!silent && ["error", "not-found"].includes(state.pronunciationResults[card.id])) clearCachedPronunciation(card.en);
       const needsAccent = !card.accent && !card.accentEdited;
       const needsIpa = !card.ipa && !card.ipaEdited;
       if (!needsAccent && !needsIpa) {

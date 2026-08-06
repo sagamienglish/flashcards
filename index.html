@@ -466,6 +466,15 @@
       border: 1px solid var(--line);
       border-radius: 15px;
     }
+    .pronunciation-fields {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding-top: 2px;
+    }
+    .pronunciation-field { min-width: 0; }
+    .pronunciation-field .field-label { margin: 0 0 6px 3px; }
     .status-choice {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -634,6 +643,18 @@
     }
     .play-text.compact { font-size: clamp(2.35rem, 6.5vw, 5.6rem); }
     .play-text.long { font-size: clamp(1.75rem, 4.4vw, 3.8rem); line-height: 1.28; }
+    .play-content { width: 100%; text-align: center; }
+    .stress-mark { color: var(--brand); font-weight: 700; }
+    .play-ipa {
+      min-height: 1.5em;
+      margin-top: clamp(12px, 2vw, 20px);
+      color: var(--muted);
+      font-size: clamp(1rem, 2.3vw, 1.55rem);
+      font-weight: 600;
+      letter-spacing: .015em;
+    }
+    .card-back .play-ipa { color: color-mix(in srgb, var(--brand-dark) 68%, var(--muted)); }
+    .play-ipa[hidden] { display: none; }
     .swipe-label {
       position: absolute;
       top: clamp(20px, 4vw, 34px);
@@ -778,7 +799,8 @@
       .card-row { grid-template-columns: 1fr 1fr 42px; }
       .card-row .part-input { grid-column: 1; }
       .card-row .status-choice { grid-column: 2; }
-      .card-row .remove { grid-column: 3; grid-row: 1 / 3; }
+      .card-row .remove { grid-column: 3; grid-row: 1 / 4; }
+      .pronunciation-fields { grid-column: 1 / 3; grid-template-columns: 1fr; }
       .play-top { grid-template-columns: 1fr auto 1fr; }
       .study-card { height: min(58vh, 540px); }
       .completion-actions { width: 100%; flex-direction: column; }
@@ -799,31 +821,33 @@
       id: "sample-jhs3-english",
       name: "中学3年 英単語サンプル",
       cards: [
-        ["environment", "環境", "Part 1"],
-        ["experience", "経験", "Part 1"],
-        ["important", "重要な", "Part 1"],
-        ["international", "国際的な", "Part 1"],
-        ["communicate", "意思を伝える", "Part 1"],
-        ["continue", "続ける", "Part 1"],
-        ["improve", "改善する・上達する", "Part 1"],
-        ["opportunity", "機会", "Part 2"],
-        ["necessary", "必要な", "Part 2"],
-        ["especially", "特に", "Part 2"],
-        ["understand", "理解する", "Part 2"],
-        ["remember", "覚えている", "Part 2"],
-        ["choose", "選ぶ", "Part 2"],
-        ["protect", "守る", "Part 2"],
-        ["future", "未来", "Part 3"],
-        ["culture", "文化", "Part 3"],
-        ["peace", "平和", "Part 3"],
-        ["relationship", "関係", "Part 3"],
-        ["solve", "解決する", "Part 3"],
-        ["believe", "信じる", "Part 3"]
-      ].map(([en, ja, part], index) => ({
+        ["environment", "環境", "Part 1", "en[vi]ronment", "/ɪnˈvaɪrənmənt/"],
+        ["experience", "経験", "Part 1", "ex[pe]rience", "/ɪkˈspɪəriəns/"],
+        ["important", "重要な", "Part 1", "im[por]tant", "/ɪmˈpɔːrtənt/"],
+        ["international", "国際的な", "Part 1", "inter[na]tional", "/ˌɪntərˈnæʃənəl/"],
+        ["communicate", "意思を伝える", "Part 1", "com[mu]nicate", "/kəˈmjuːnɪkeɪt/"],
+        ["continue", "続ける", "Part 1", "con[tin]ue", "/kənˈtɪnjuː/"],
+        ["improve", "改善する・上達する", "Part 1", "im[prove]", "/ɪmˈpruːv/"],
+        ["opportunity", "機会", "Part 2", "oppor[tu]nity", "/ˌɑːpərˈtuːnəti/"],
+        ["necessary", "必要な", "Part 2", "[ne]cessary", "/ˈnesəseri/"],
+        ["especially", "特に", "Part 2", "es[pe]cially", "/ɪˈspeʃəli/"],
+        ["understand", "理解する", "Part 2", "under[stand]", "/ˌʌndərˈstænd/"],
+        ["remember", "覚えている", "Part 2", "re[mem]ber", "/rɪˈmembər/"],
+        ["choose", "選ぶ", "Part 2", "[choose]", "/tʃuːz/"],
+        ["protect", "守る", "Part 2", "pro[tect]", "/prəˈtekt/"],
+        ["future", "未来", "Part 3", "[fu]ture", "/ˈfjuːtʃər/"],
+        ["culture", "文化", "Part 3", "[cul]ture", "/ˈkʌltʃər/"],
+        ["peace", "平和", "Part 3", "[peace]", "/piːs/"],
+        ["relationship", "関係", "Part 3", "re[la]tionship", "/rɪˈleɪʃənʃɪp/"],
+        ["solve", "解決する", "Part 3", "[solve]", "/sɑːlv/"],
+        ["believe", "信じる", "Part 3", "be[lieve]", "/bɪˈliːv/"]
+      ].map(([en, ja, part, accent, ipa], index) => ({
         id: `sample-card-${index + 1}`,
         en,
         ja,
         part,
+        accent,
+        ipa,
         status: "unlearned"
       }))
     };
@@ -840,6 +864,8 @@
         frontSide: "en",
         shuffle: false,
         autoPlayAudio: true,
+        showStress: true,
+        showIpa: true,
         displayMode: "normal",
         typewriterSpeed: 150,
         autoPlayMode: "manual"
@@ -867,7 +893,17 @@
         saveData();
         return;
       }
-      try { state.decks = JSON.parse(saved) || []; }
+      try {
+        state.decks = JSON.parse(saved) || [];
+        const sampleCards = new Map(SAMPLE_DECK.cards.map(card => [card.en, card]));
+        let migrated = false;
+        state.decks.forEach(deck => deck.cards?.forEach(card => {
+          const sample = deck.id === SAMPLE_DECK.id ? sampleCards.get(card.en) : null;
+          if (typeof card.accent !== "string") { card.accent = sample?.accent || ""; migrated = true; }
+          if (typeof card.ipa !== "string") { card.ipa = sample?.ipa || ""; migrated = true; }
+        }));
+        if (migrated) saveData();
+      }
       catch { state.decks = []; }
     }
     function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.decks)); }
@@ -922,8 +958,8 @@
         <div class="manual-body">
           <p class="manual-intro">単語を登録して、学習方法を選ぶだけで始められます。まずはサンプル単語帳で操作を試してみてください。</p>
           <ol class="manual-steps">
-            <li><strong>単語帳を用意する</strong>「新しい単語帳」から1枚ずつ追加するか、Excelの「英語・日本語・パート」の3列をコピーしてまとめて貼り付けます。</li>
-            <li><strong>学習方法を選ぶ</strong>一覧の「学習する」を押し、未習得だけ・Part別・シャッフル・自動再生などを選びます。</li>
+            <li><strong>単語帳を用意する</strong>「新しい単語帳」から1枚ずつ追加するか、Excelの「英語・日本語・パート・強勢・発音記号」の5列をコピーしてまとめて貼り付けます。</li>
+            <li><strong>学習方法を選ぶ</strong>一覧の「学習する」を押し、強勢・発音記号の表示、未習得だけ・Part別・シャッフル・自動再生などを選びます。</li>
             <li><strong>カードで覚える</strong>カードを押して裏返します。左右のボタンやスワイプで「未習得」「習得済み」を記録できます。</li>
             <li><strong>データを保管する</strong>上部の「⇅」からファイルへ書き出せます。別の端末では、そのファイルを読み込んで続けられます。</li>
           </ol>
@@ -970,6 +1006,8 @@
               en: typeof card.en === "string" ? card.en : "",
               ja: typeof card.ja === "string" ? card.ja : "",
               part: typeof card.part === "string" ? card.part : "",
+              accent: typeof card.accent === "string" ? card.accent : "",
+              ipa: typeof card.ipa === "string" ? card.ipa : "",
               status: card.status === "learned" ? "learned" : "unlearned"
             })) : []
           }));
@@ -1004,15 +1042,14 @@
     }
 
     function renderList() {
-      const hasUserDeck = state.decks.some(deck => deck.id !== SAMPLE_DECK.id);
-      const welcome = !hasUserDeck ? `<div class="empty">
+      const welcome = `<div class="empty">
           <div>
             <div class="empty-visual"><div class="mini-card">A</div><div class="mini-card">あ</div></div>
             <h2>最初の単語帳をつくりましょう</h2>
             <p>英語と日本語を登録するだけ。Excelからまとめて貼り付けることもできます。</p>
             <button class="btn btn-primary" onclick="createNewDeck()"><span class="icon">＋</span> 単語帳をつくる</button>
           </div>
-        </div>` : "";
+        </div>`;
       const deckSection = state.decks.length ? `<section class="deck-section" aria-labelledby="deckSectionTitle">
         <div class="deck-section-head">
           <h2 id="deckSectionTitle">${state.decks.length === 1 && state.decks[0].id === SAMPLE_DECK.id ? "お試し用のサンプル" : "単語帳"}</h2>
@@ -1084,6 +1121,8 @@
           ${c.autoPlayMode === "manual" ? `<div><span class="field-label">最初に表示する面</span>${choiceCards([["en","A","英語"],["ja","あ","日本語"]], c.frontSide, "setFrontSide")}</div>` : ""}
           <div class="${parts.length ? "" : "setting-full"}"><span class="field-label">オプション</span><div class="check-row">
             <label class="check"><span class="option-icon">🔊</span><input type="checkbox" ${c.autoPlayAudio ? "checked" : ""} onchange="setOption('autoPlayAudio', this.checked)"> 自動で発音</label>
+            <label class="check"><span class="option-icon">Á</span><input type="checkbox" ${c.showStress ? "checked" : ""} onchange="setOption('showStress', this.checked)"> 強勢を表示</label>
+            <label class="check"><span class="option-icon">/ /</span><input type="checkbox" ${c.showIpa ? "checked" : ""} onchange="setOption('showIpa', this.checked)"> 発音記号を表示</label>
             <label class="check"><span class="option-icon">⇄</span><input type="checkbox" ${c.shuffle ? "checked" : ""} onchange="setOption('shuffle', this.checked)"> シャッフル</label>
           </div></div>
           ${parts.length ? `<div><span class="field-label">パート</span><div class="check-row">${parts.map(part =>
@@ -1142,13 +1181,14 @@
     function renderEdit() {
       const importPanel = `<section class="panel import-panel" id="importPanel">
         <div class="panel-title"><h2>Excelからまとめて追加</h2></div>
-        <label class="field-label" for="importArea">英語・日本語・パートの順に貼り付け</label>
-        <textarea class="textarea" id="importArea" placeholder="apple&#9;りんご&#9;Part 1&#10;banana&#9;バナナ&#9;Part 1"></textarea>
-        <p class="hint">Excelの3列をコピーして、そのまま貼り付けられます。</p>
+        <label class="field-label" for="importArea">英語・日本語・パート・強勢・発音記号の順に貼り付け</label>
+        <textarea class="textarea" id="importArea" placeholder="environment&#9;環境&#9;Part 1&#9;en[vi]ronment&#9;/ɪnˈvaɪrənmənt/&#10;future&#9;未来&#9;Part 3&#9;[fu]ture&#9;/ˈfjuːtʃər/"></textarea>
+        <p class="hint">Excelの5列をコピーして貼り付けられます。強く読む部分は [ ] で囲みます。強勢・発音記号は空欄でも構いません。</p>
         <button class="btn btn-secondary btn-wide" style="margin-top:16px" onclick="importCards()">カードに追加</button>
       </section>`;
       const cardsPanel = `<section class="panel" id="cardsPanel">
         <div class="panel-title"><h2>カード <span id="cardCount" class="count-pill"></span></h2><button class="btn btn-secondary" onclick="addEmptyCard()">＋ 1枚追加</button></div>
+        <p class="hint" style="margin:-7px 0 16px">強く読む部分を [ ] で囲んでください。例：en[vi]ronment</p>
         <div id="editCards" class="cards"></div>
       </section>`;
       const cardTools = state.editingDeck.cards.length ? `${cardsPanel}${importPanel}` : `${importPanel}${cardsPanel}`;
@@ -1181,6 +1221,10 @@
             <button class="learned ${card.status === "learned" ? "active" : ""}" aria-pressed="${card.status === "learned"}" onclick="setCardStatus(${index}, 'learned', this.parentElement)">✓ 習得済み</button>
           </div>
           <button class="remove" aria-label="カードを削除" onclick="removeCard(${index})">×</button>
+          <div class="pronunciation-fields">
+            <label class="pronunciation-field"><span class="field-label">強勢</span><input class="input" value="${escapeHtml(card.accent)}" placeholder="en[vi]ronment" oninput="updateCard(${index}, 'accent', this.value)"></label>
+            <label class="pronunciation-field"><span class="field-label">発音記号</span><input class="input" value="${escapeHtml(card.ipa)}" placeholder="/ɪnˈvaɪrənmənt/" oninput="updateCard(${index}, 'ipa', this.value)"></label>
+          </div>
         </div>`).join("") : `<div class="empty" style="min-height:190px"><div><h2>カードはまだありません</h2><p>1枚ずつ追加するか、Excelからまとめて貼り付けてください。</p></div></div>`;
     }
     function updateCard(index, key, value) { state.editingDeck.cards[index][key] = value; }
@@ -1193,7 +1237,7 @@
       });
     }
     function addEmptyCard() {
-      state.editingDeck.cards.push({ id: "c-" + uid(), en: "", ja: "", part: "", status: "unlearned" });
+      state.editingDeck.cards.push({ id: "c-" + uid(), en: "", ja: "", part: "", accent: "", ipa: "", status: "unlearned" });
       renderEditCards();
       positionImportPanel();
       document.querySelector(".card-row:last-child input")?.focus();
@@ -1215,9 +1259,9 @@
       const area = document.getElementById("importArea");
       let count = 0;
       area.value.split(/\r?\n/).forEach(line => {
-        const [en = "", ja = "", part = ""] = line.split("\t").map(value => value.trim());
+        const [en = "", ja = "", part = "", accent = "", ipa = ""] = line.split("\t").map(value => value.trim());
         if (en || ja) {
-          state.editingDeck.cards.push({ id: "c-" + uid(), en, ja, part, status: "unlearned" });
+          state.editingDeck.cards.push({ id: "c-" + uid(), en, ja, part, accent, ipa, status: "unlearned" });
           count++;
         }
       });
@@ -1281,8 +1325,8 @@
             <div class="swipe-label left" id="missLabel"><span>×</span> 分からない</div>
             <div class="swipe-label right" id="knowLabel"><span>✓</span> 習得済み</div>
             <div class="card-inner" id="cardInner">
-              <section class="card-face card-front"><div class="play-text" id="frontText"></div></section>
-              <section class="card-face card-back"><div class="play-text" id="backText"></div></section>
+              <section class="card-face card-front"><div class="play-content"><div class="play-text" id="frontText"></div><div class="play-ipa" id="frontIpa" hidden></div></div></section>
+              <section class="card-face card-back"><div class="play-content"><div class="play-text" id="backText"></div><div class="play-ipa" id="backIpa" hidden></div></div></section>
             </div>
           </div>
         </main>
@@ -1308,6 +1352,19 @@
         if (i >= text.length) { clearInterval(state.playState.typingInterval); state.playState.typingInterval = null; done?.(); }
       }, state.playConfig.typewriterSpeed);
     }
+    function accentedEnglishHtml(card) {
+      if (!state.playConfig.showStress || !card.accent) return escapeHtml(card.en);
+      const match = card.accent.match(/^(.*)\[([^\[\]]+)\](.*)$/);
+      if (!match) return escapeHtml(card.en);
+      return `${escapeHtml(match[1])}<span class="stress-mark">${escapeHtml(match[2])}</span>${escapeHtml(match[3])}`;
+    }
+    function renderFace(textElement, ipaElement, text, isEnglish, card) {
+      if (isEnglish) textElement.innerHTML = accentedEnglishHtml(card);
+      else textElement.textContent = text;
+      const showIpa = isEnglish && state.playConfig.showIpa && card.ipa;
+      ipaElement.textContent = showIpa ? card.ipa : "";
+      ipaElement.hidden = !showIpa;
+    }
     function handleAutoPlayNext() {
       const mode = state.playConfig.autoPlayMode;
       if (mode === "manual") return;
@@ -1331,9 +1388,11 @@
       document.getElementById("playPart").textContent = card.part || "ALL";
       const frontText = document.getElementById("frontText");
       const backText = document.getElementById("backText");
+      const frontIpa = document.getElementById("frontIpa");
+      const backIpa = document.getElementById("backIpa");
       setTextSize(frontText, front);
       setTextSize(backText, back);
-      backText.textContent = back;
+      renderFace(backText, backIpa, back, !frontIsEnglish, card);
       if (forceFront) {
         state.playState.isFlipped = false;
         document.getElementById("cardInner").classList.remove("flipped");
@@ -1345,8 +1404,17 @@
         if (state.playConfig.autoPlayAudio) playAudio();
         handleAutoPlayNext();
       };
-      if (state.playConfig.displayMode === "typewriter" && forceFront) typeText(frontText, front, complete);
-      else { frontText.textContent = front; complete(); }
+      const completeFront = () => {
+        renderFace(frontText, frontIpa, front, frontIsEnglish, card);
+        complete();
+      };
+      if (state.playConfig.displayMode === "typewriter" && forceFront) {
+        frontIpa.hidden = true;
+        typeText(frontText, front, completeFront);
+      } else {
+        renderFace(frontText, frontIpa, front, frontIsEnglish, card);
+        complete();
+      }
     }
     function flipCard() {
       if (state.playState.completed) return;
@@ -1354,7 +1422,14 @@
         clearInterval(state.playState.typingInterval);
         state.playState.typingInterval = null;
         const card = state.playState.cards[state.playState.currentIndex];
-        document.getElementById("frontText").textContent = state.playConfig.frontSide === "en" ? card.en : card.ja;
+        const frontIsEnglish = state.playConfig.frontSide === "en";
+        renderFace(
+          document.getElementById("frontText"),
+          document.getElementById("frontIpa"),
+          frontIsEnglish ? card.en : card.ja,
+          frontIsEnglish,
+          card
+        );
         return handleAutoPlayNext();
       }
       state.playState.isFlipped = !state.playState.isFlipped;

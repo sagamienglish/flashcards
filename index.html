@@ -879,6 +879,7 @@
       pronunciationLoadingIds: new Set(),
       pronunciationResults: {},
       pronunciationBatchActive: false,
+      pronunciationCache: new Map(),
       playConfig: {
         deckId: null,
         targetStatus: "all",
@@ -1271,8 +1272,8 @@
       const status = state.pronunciationResults[cardId];
       if (state.pronunciationLoadingIds.has(cardId)) return "辞書から発音を取得しています…";
       if (status === "success") return "自動入力しました。必要に応じて修正できます。";
-      if (status === "not-found") return "辞書に見つかりませんでした。必要に応じて手入力してください。";
-      if (status === "error") return "発音を取得できませんでした。通信状況を確認して、もう一度お試しください。";
+      if (status === "not-found") return "辞書に見つからない単語がありました。必要に応じて手入力してください。";
+      if (status === "error") return "発音を取得できませんでした。少し待ってから、もう一度お試しください。";
       return "";
     }
     function pronunciationStatusClass(cardId) {
@@ -1346,19 +1347,76 @@
       if (end + 1 < text.length && /[bcdfghjklmnpqrstvwxz]/i.test(text[end]) && /[bcdfghjklmnpqrstvwxz]/i.test(text[end + 1])) end++;
       return `${text.slice(0, start)}[${text.slice(start, end)}]${text.slice(end)}`;
     }
-    async function lookupPronunciation(word) {
+    const UNSTRESSED_FUNCTION_WORDS = new Set(["a", "an", "the", "of", "to", "for", "and", "or", "but", "as", "at", "by", "in", "on", "from", "with", "is", "am", "are", "was", "were", "be", "been", "being"]);
+    const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+    async function fetchJsonWithRetry(url, attempts = 3) {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 9000);
+      const timeout = setTimeout(() => controller.abort(), 12000);
       try {
-        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word.trim().toLowerCase())}`, { signal: controller.signal });
-        if (response.status === 404) return null;
-        if (!response.ok) throw new Error(`dictionary-${response.status}`);
-        const entries = await response.json();
-        const ipa = pickIpa(Array.isArray(entries) ? entries : []);
-        return ipa ? { ipa, accent: suggestStressMarkup(word, ipa) } : null;
+        for (let attempt = 0; attempt < attempts; attempt++) {
+          try {
+            const response = await fetch(url, { signal: controller.signal, headers: { accept: "application/json" } });
+            if (response.ok) return await response.json();
+            if (response.status === 404) return null;
+            if (response.status !== 429 && response.status < 500) throw new Error(`request-${response.status}`);
+          } catch (error) {
+            if (attempt === attempts - 1 || error.name === "AbortError") throw error;
+          }
+          await wait(350 * (attempt + 1));
+        }
+        return null;
       } finally {
         clearTimeout(timeout);
       }
+    }
+    async function lookupSingleWordDirectly(word) {
+      const entries = await fetchJsonWithRetry(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, 2);
+      return { word, entries: Array.isArray(entries) ? entries : null };
+    }
+    async function lookupPronunciation(text) {
+      const matches = [...String(text || "").matchAll(/[A-Za-z]+(?:['-][A-Za-z]+)*/g)].slice(0, 10);
+      if (!matches.length) return null;
+      const uniqueWords = [...new Set(matches.map(match => match[0].toLowerCase()))];
+      const missingWords = uniqueWords.filter(word => !state.pronunciationCache.has(word));
+      if (missingWords.length) {
+        let results;
+        try {
+          const payload = await fetchJsonWithRetry(`/api/pronunciation?text=${encodeURIComponent(missingWords.join(" "))}`);
+          if (!Array.isArray(payload?.results)) throw new Error("pronunciation-proxy-unavailable");
+          results = payload.results;
+        } catch {
+          const directResults = await Promise.allSettled(missingWords.map(word => lookupSingleWordDirectly(word)));
+          results = directResults.map((result, index) => result.status === "fulfilled" ? result.value : { word: missingWords[index], entries: null });
+        }
+        results.forEach(result => {
+          const ipa = pickIpa(Array.isArray(result.entries) ? result.entries : []);
+          state.pronunciationCache.set(result.word, ipa || null);
+        });
+        missingWords.forEach(word => {
+          if (!state.pronunciationCache.has(word)) state.pronunciationCache.set(word, null);
+        });
+      }
+      const ipaParts = [];
+      let accent = "";
+      let cursor = 0;
+      let found = 0;
+      matches.forEach(match => {
+        const originalWord = match[0];
+        const normalizedWord = originalWord.toLowerCase();
+        const ipa = state.pronunciationCache.get(normalizedWord);
+        accent += text.slice(cursor, match.index);
+        if (ipa) {
+          found++;
+          ipaParts.push(ipa.replace(/^\/+|\/+$/g, ""));
+          const markStress = matches.length === 1 || !UNSTRESSED_FUNCTION_WORDS.has(normalizedWord);
+          accent += markStress ? (suggestStressMarkup(originalWord, ipa) || originalWord) : originalWord;
+        } else {
+          accent += originalWord;
+        }
+        cursor = match.index + originalWord.length;
+      });
+      accent += text.slice(cursor);
+      return found ? { ipa: `/${ipaParts.join(" ")}/`, accent, complete: found === matches.length } : null;
     }
     async function autoFillCardPronunciation(indexOrId, silent = false, deck = state.editingDeck) {
       const card = typeof indexOrId === "string" ? deck?.cards?.find(item => item.id === indexOrId) : deck?.cards?.[indexOrId];
@@ -1380,7 +1438,7 @@
         }
         if (needsIpa) card.ipa = result.ipa;
         if (needsAccent && result.accent) card.accent = result.accent;
-        state.pronunciationResults[card.id] = "success";
+        state.pronunciationResults[card.id] = result.complete === false ? "not-found" : "success";
         if (state.decks.includes(deck)) saveData();
         return true;
       } catch {
@@ -1407,13 +1465,14 @@
       let completed = 0;
       let succeeded = 0;
       const total = targets.length;
-      const workers = Array.from({ length: Math.min(4, targets.length) }, async () => {
+      const workers = Array.from({ length: Math.min(2, targets.length) }, async () => {
         while (targets.length) {
           const { card } = targets.shift();
           if (await autoFillCardPronunciation(card.id, true, deck)) succeeded++;
           completed++;
           const button = document.getElementById("autoFillAllButton");
           if (button) button.textContent = `発音を取得中… ${completed}/${total}`;
+          if (targets.length) await wait(180);
         }
       });
       await Promise.all(workers);
@@ -1551,9 +1610,9 @@
     }
     function accentedEnglishHtml(card) {
       if (!state.playConfig.showStress || !card.accent) return escapeHtml(card.en);
-      const match = card.accent.match(/^(.*)\[([^\[\]]+)\](.*)$/);
-      if (!match) return escapeHtml(card.en);
-      return `${escapeHtml(match[1])}<span class="stress-mark">${escapeHtml(match[2])}</span>${escapeHtml(match[3])}`;
+      const escapedAccent = escapeHtml(card.accent);
+      if (!/\[[^\[\]]+\]/.test(escapedAccent)) return escapeHtml(card.en);
+      return escapedAccent.replace(/\[([^\[\]]+)\]/g, '<span class="stress-mark">$1</span>');
     }
     function renderFace(textElement, ipaElement, text, isEnglish, card) {
       if (isEnglish) textElement.innerHTML = accentedEnglishHtml(card);
